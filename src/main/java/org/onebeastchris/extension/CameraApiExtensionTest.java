@@ -13,6 +13,8 @@ import org.geysermc.geyser.api.event.lifecycle.GeyserPostInitializeEvent;
 import org.geysermc.geyser.api.extension.Extension;
 import org.geysermc.geyser.api.util.Position;
 
+import java.awt.*;
+
 public class CameraApiExtensionTest implements Extension {
 
     @Subscribe
@@ -85,9 +87,7 @@ public class CameraApiExtensionTest implements Extension {
         } while ((fadeIn + hold + fadeOut) >= 10);
 
         CameraFade fade = CameraFade.builder()
-                .red(red)
-                .green(green)
-                .blue(blue)
+                .color(new Color(red, green, blue))
                 .fadeInSeconds(fadeIn)
                 .holdSeconds(hold)
                 .fadeOutSeconds(fadeOut)
