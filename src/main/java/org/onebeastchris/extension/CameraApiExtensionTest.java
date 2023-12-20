@@ -1,5 +1,6 @@
 package org.onebeastchris.extension;
 
+import org.cloudburstmc.math.vector.Vector3f;
 import org.geysermc.event.subscribe.Subscribe;
 import org.geysermc.geyser.api.bedrock.camera.CameraEaseType;
 import org.geysermc.geyser.api.bedrock.camera.CameraFade;
@@ -11,9 +12,9 @@ import org.geysermc.geyser.api.connection.GeyserConnection;
 import org.geysermc.geyser.api.event.lifecycle.GeyserDefineCommandsEvent;
 import org.geysermc.geyser.api.event.lifecycle.GeyserPostInitializeEvent;
 import org.geysermc.geyser.api.extension.Extension;
-import org.geysermc.geyser.api.util.Position;
 
 import java.awt.*;
+import java.util.UUID;
 
 public class CameraApiExtensionTest implements Extension {
 
@@ -70,7 +71,7 @@ public class CameraApiExtensionTest implements Extension {
         if (args != null && args.length != 0 && args[0].equalsIgnoreCase("stop")) {
             for (GeyserConnection connection : geyserApi().onlineConnections()) {
                 commandSource.sendMessage("Clearing camera instructions");
-                connection.clearCameraInstructions();
+                connection.camera().clearCameraInstructions();
             }
             return;
         }
@@ -96,7 +97,7 @@ public class CameraApiExtensionTest implements Extension {
         commandSource.sendMessage("Fading to " + red + ", " + green + ", " + blue + " over " + (fadeIn + hold + fadeOut) + " seconds");
 
         for (GeyserConnection connection : geyserApi().onlineConnections()) {
-            connection.sendCameraFade(fade);
+            connection.camera().sendCameraFade(fade);
         }
     }
 
@@ -104,7 +105,7 @@ public class CameraApiExtensionTest implements Extension {
         if (args != null && args.length != 0 && args[0].equalsIgnoreCase("stop")) {
             for (GeyserConnection connection : geyserApi().onlineConnections()) {
                 commandSource.sendMessage("Clearing camera instructions");
-                connection.clearCameraInstructions();
+                connection.camera().clearCameraInstructions();
             }
             return;
         }
@@ -124,8 +125,8 @@ public class CameraApiExtensionTest implements Extension {
                 .easeDuration(easeDuration);
 
         for (GeyserConnection connection : geyserApi().onlineConnections()) {
-            Position playerPosition = connection.playerEntity().position();
-            Position cameraPosition = new Position(playerPosition.x() + 10, playerPosition.y() + 10, playerPosition.z() + 10);
+            Vector3f playerPosition = connection.entities().playerEntity().position();
+            Vector3f cameraPosition = Vector3f.from(playerPosition.getX() + 10, playerPosition.getY() + 10, playerPosition.getZ() + 10);
 
             if (facing) {
                 position.facingPosition(playerPosition);
@@ -134,7 +135,7 @@ public class CameraApiExtensionTest implements Extension {
                         .rotationY((int) (Math.random() * 360));
             }
 
-            connection.sendCameraPosition(position
+            connection.camera().sendCameraPosition(position
                     .position(cameraPosition)
                     .build());
 
@@ -145,7 +146,7 @@ public class CameraApiExtensionTest implements Extension {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                connection.clearCameraInstructions();
+                connection.camera().clearCameraInstructions();
             }).start();
 
             commandSource.sendMessage("Sent camera position: \n" +
@@ -166,7 +167,7 @@ public class CameraApiExtensionTest implements Extension {
             if (args[0].equalsIgnoreCase("stop")) {
                 for (GeyserConnection connection : geyserApi().onlineConnections()) {
                     commandSource.sendMessage("Clearing camera instructions");
-                    connection.clearCameraInstructions();
+                    connection.camera().clearCameraInstructions();
                 }
                 return;
             }
@@ -175,25 +176,27 @@ public class CameraApiExtensionTest implements Extension {
                 case "movement":
                     for (GeyserConnection connection : geyserApi().onlineConnections()) {
                         commandSource.sendMessage("Locking movement");
-                        connection.lockInputs(false, true);
+                        connection.entities().lockMovement(true, UUID.fromString("00000000-0000-0000-0000-000000000000"));
                     }
                     break;
                 case "camera":
                     for (GeyserConnection connection : geyserApi().onlineConnections()) {
                         commandSource.sendMessage("Locking camera");
-                        connection.lockInputs(true, false);
+                        connection.camera().lockCamera(true, UUID.fromString("00000000-0000-0000-0000-000000000000"));
                     }
                     break;
                 case "both":
                     for (GeyserConnection connection : geyserApi().onlineConnections()) {
                         commandSource.sendMessage("Locking movement and camera");
-                        connection.lockInputs(true, true);
+                        connection.camera().lockCamera(true, UUID.fromString("00000000-0000-0000-0000-000000000000"));
+                        connection.entities().lockMovement(true, UUID.fromString("00000000-0000-0000-0000-000000000000"));
                     }
                     break;
                 case "unlock":
                     for (GeyserConnection connection : geyserApi().onlineConnections()) {
                         commandSource.sendMessage("Unlocking movement and camera");
-                        connection.lockInputs(false, false);
+                        connection.camera().lockCamera(false, UUID.fromString("00000000-0000-0000-0000-000000000000"));
+                        connection.entities().lockMovement(false, UUID.fromString("00000000-0000-0000-0000-000000000000"));
                     }
                     break;
             }
@@ -201,7 +204,8 @@ public class CameraApiExtensionTest implements Extension {
             commandSource.sendMessage("unlocking all locks");
             commandSource.sendMessage("Valid args: movement, camera, both, unlock");
             for (GeyserConnection connection : geyserApi().onlineConnections()) {
-                connection.unlockInputs();
+                connection.camera().lockCamera(false, UUID.fromString("00000000-0000-0000-0000-000000000000"));
+                connection.entities().lockMovement(false, UUID.fromString("00000000-0000-0000-0000-000000000000"));
             }
         }
     }
@@ -211,7 +215,7 @@ public class CameraApiExtensionTest implements Extension {
             if (args[0].equalsIgnoreCase("stop")) {
                 for (GeyserConnection connection : geyserApi().onlineConnections()) {
                     commandSource.sendMessage("Clearing camera instructions");
-                    connection.clearCameraInstructions();
+                    connection.camera().clearCameraInstructions();
                 }
                 return;
             }
@@ -220,27 +224,27 @@ public class CameraApiExtensionTest implements Extension {
                 case "first":
                     for (GeyserConnection connection : geyserApi().onlineConnections()) {
                         commandSource.sendMessage("Setting camera perspective to first person");
-                        connection.forceCameraPerspective(CameraPerspective.FIRST_PERSON);
+                        connection.camera().forceCameraPerspective(CameraPerspective.FIRST_PERSON);
                     }
                     break;
                 case "third":
                     for (GeyserConnection connection : geyserApi().onlineConnections()) {
                         commandSource.sendMessage("Setting camera perspective to free");
-                        connection.forceCameraPerspective(CameraPerspective.THIRD_PERSON);
+                        connection.camera().forceCameraPerspective(CameraPerspective.THIRD_PERSON);
                     }
                     break;
                 case "third_front":
                     for (GeyserConnection connection : geyserApi().onlineConnections()) {
                         commandSource.sendMessage("Setting camera perspective to third person front");
-                        connection.forceCameraPerspective(CameraPerspective.THIRD_PERSON_FRONT);
+                        connection.camera().forceCameraPerspective(CameraPerspective.THIRD_PERSON_FRONT);
                     }
                     break;
                 case "free":
                     for (GeyserConnection connection : geyserApi().onlineConnections()) {
                         commandSource.sendMessage("Setting camera perspective to free");
-                        Position camPos = connection.playerEntity().position();
-                        connection.sendCameraPosition(CameraPosition.builder()
-                                        .position(new Position(camPos.x() + 10, camPos.y() + 10, camPos.z()))
+                        Vector3f camPos = connection.entities().playerEntity().position();
+                        connection.camera().sendCameraPosition(CameraPosition.builder()
+                                        .position(camPos.add(0, 10, 0))
                                         .facingPosition(camPos)
                                 .build());
                     }
