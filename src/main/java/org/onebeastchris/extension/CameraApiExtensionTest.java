@@ -2,11 +2,9 @@ package org.onebeastchris.extension;
 
 import org.cloudburstmc.math.vector.Vector3f;
 import org.geysermc.event.subscribe.Subscribe;
-import org.geysermc.geyser.api.bedrock.camera.CameraEaseType;
-import org.geysermc.geyser.api.bedrock.camera.CameraFade;
-import org.geysermc.geyser.api.bedrock.camera.CameraPerspective;
-import org.geysermc.geyser.api.bedrock.camera.CameraPosition;
+import org.geysermc.geyser.api.bedrock.camera.*;
 import org.geysermc.geyser.api.command.Command;
+import org.geysermc.geyser.api.command.CommandExecutor;
 import org.geysermc.geyser.api.command.CommandSource;
 import org.geysermc.geyser.api.connection.GeyserConnection;
 import org.geysermc.geyser.api.event.lifecycle.GeyserDefineCommandsEvent;
@@ -65,6 +63,30 @@ public class CameraApiExtensionTest implements Extension {
                 .executor(this::perspectiveTest)
                 .source(CommandSource.class)
                 .build());
+
+        event.register(Command.builder(this)
+                .name("a")
+                .source(CommandSource.class)
+                .executor((source, command, args) -> {
+                    source.sendMessage("You can stack position and fade instructions!");
+                    GeyserConnection connection = (GeyserConnection) source;
+                    connection.camera().sendCameraPosition(
+                            CameraPosition.builder()
+                                    .position(connection.entities().playerEntity().position().add(Vector3f.from(10, 10, 10)))
+                                    .cameraFade(CameraFade.builder()
+                                            .fadeInSeconds(1)
+                                            .fadeHoldSeconds(1)
+                                            .fadeOutSeconds(1)
+                                            .color(Color.RED)
+                                            .build())
+                                    .easeType(CameraEaseType.LINEAR)
+                                    .renderPlayerEffects(true)
+                                    .easeSeconds(2)
+                                    .facingPosition(connection.entities().playerEntity().position())
+                                    .build()
+                    );
+                })
+                .build());
     }
 
     private void cameraFade(CommandSource commandSource, Command command, String[] args) {
@@ -90,7 +112,7 @@ public class CameraApiExtensionTest implements Extension {
         CameraFade fade = CameraFade.builder()
                 .color(new Color(red, green, blue))
                 .fadeInSeconds(fadeIn)
-                .holdSeconds(hold)
+                .fadeHoldSeconds(hold)
                 .fadeOutSeconds(fadeOut)
                 .build();
 
@@ -102,12 +124,13 @@ public class CameraApiExtensionTest implements Extension {
     }
 
     private void cameraPosition(CommandSource commandSource, Command command, String[] args) {
-        if (args != null && args.length != 0 && args[0].equalsIgnoreCase("stop")) {
-            for (GeyserConnection connection : geyserApi().onlineConnections()) {
-                commandSource.sendMessage("Clearing camera instructions");
-                connection.camera().clearCameraInstructions();
+        if (args != null && args.length != 0) {
+            if (args[0].equalsIgnoreCase("stop")) {
+                for (GeyserConnection connection : geyserApi().onlineConnections()) {
+                    commandSource.sendMessage("Clearing camera instructions");
+                    connection.camera().clearCameraInstructions();
+                }
             }
-            return;
         }
 
         CameraEaseType easeType = CameraEaseType.values()[(int) (Math.random() * CameraEaseType.values().length)];
@@ -122,7 +145,7 @@ public class CameraApiExtensionTest implements Extension {
                 .playerPositionForAudio(playerPositionForAudio)
                 .renderPlayerEffects(renderPlayerEffects)
                 .easeType(easeType)
-                .easeDuration(easeDuration);
+                .easeSeconds(easeDuration);
 
         for (GeyserConnection connection : geyserApi().onlineConnections()) {
             Vector3f playerPosition = connection.entities().playerEntity().position();
